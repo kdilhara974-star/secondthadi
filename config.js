@@ -84,6 +84,6 @@ LIVE_MSG: process.env.LIVE_MSG || "> 𝐌𝐚𝐝𝐞 𝐛𝐲 𝗥𝗔𝗡𝗨�
 // add alive msg here 
 ANTI_DEL_PATH: process.env.ANTI_DEL_PATH || "log", 
 // change it to 'same' if you want to resend deleted message in same chat 
-BOT_VERSION: process.env.BOT_VERSION || "3.5.8"
+BOT_VERSION: process.env.BOT_VERSION || "4.1.9"
 
 };
