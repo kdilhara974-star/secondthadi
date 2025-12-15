@@ -1,7 +1,8 @@
-const { cmd } = require('../command');
 const config = require('../config');
-const os = require("os");
+const { cmd, commands } = require('../command');
 const { runtime } = require('../lib/functions');
+const axios = require('axios');
+const os = require("os");
 
 // Fake ChatGPT vCard
 const fakevCard = {
@@ -32,7 +33,7 @@ cmd({
     filename: __filename
 },
 async (robin, mek, m, {
-    from, quoted, reply, sender
+    from, pushname ,quoted, reply, sender
 }) => {
     try {
         await robin.sendPresenceUpdate('recording', from);
@@ -48,7 +49,7 @@ async (robin, mek, m, {
 
         // Stylish Alive Caption
        const status = `
-👋 Hello, I am alive now !!
+👋 Hello ${pushname}, I am alive now !!
 
 ╭─〔 💠 ALIVE STATUS 💠 〕─◉
 │
