@@ -38,10 +38,10 @@ cmd(
 
   async (conn, mek, m, { from, reply, q }) => {
     try {
-      if (!q) return reply("❓ Song name ekak hari YouTube link ekak hari denna.");
+      if (!q) return reply("⚠️ Please provide a song name or YouTube link (or reply to a message).");
 
       const search = await yts(q);
-      if (!search.videos.length) return reply("❌ Song ekak hoyaganna bari una.");
+      if (!search.videos.length) return reply("❌ The song could not be found.");
 
       const video = search.videos[0];
       const ytUrl = video.url;
@@ -52,7 +52,7 @@ cmd(
       const { data } = await axios.get(apiUrl);
 
       if (!data?.status || !data?.data?.url) {
-        return reply("❌ Song download karanna bari una.");
+        return reply("");
       }
 
       const audioUrl = data.data.url;
