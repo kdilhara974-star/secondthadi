@@ -207,6 +207,7 @@ cmd(
           react: { text: "✔️", key: mekInfo.key },
         });
 
+        // Remove listener after reply
         conn.ev.off("messages.upsert", handler);
       };
 
