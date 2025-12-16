@@ -191,8 +191,8 @@ cmd(
         }
       });
     } catch (err) {
-      console.error("song3 cmd error:", err);
-      reply("⚠️ Song process karaddi error ekak una.");
+      console.error("song cmd error:", err);
+      reply("*Error*");
     }
   }
 );
