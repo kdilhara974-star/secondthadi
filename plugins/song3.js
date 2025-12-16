@@ -27,8 +27,8 @@ END:VCARD`
 
 
 cmd({
-  pattern: "song3",
-    alias: ["play3"],
+  pattern: "song2",
+  alias: ["play2"],
   react: "🎵",
   desc: "YouTube Song Downloader (Multi Reply + Voice Note Fixed)",
   category: "download",
