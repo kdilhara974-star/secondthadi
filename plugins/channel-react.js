@@ -3,65 +3,58 @@ const { cmd } = require("../command");
 cmd({
   pattern: "creact",
   react: "📢",
-  desc: "React multiple emojis to channel message",
+  desc: "React to channel message using link",
   category: "channel",
-  use: ".creact <link>,💙,❤️,💚",
+  use: ".creact <channel_link>,💚",
   filename: __filename
 }, async (conn, mek, m, { from, q, reply }) => {
   try {
     if (!q) {
       return reply(
-        "❌ Use:\n.creact <channel_link>,💙,❤️,💚\n\nOR\nReply channel msg + .creact 💙,❤️"
+        "❌ Use:\n.creact https://whatsapp.com/channel/XXXX/MSGID,💚"
       );
     }
 
-    let emojis = [];
-    let targetKey = null;
-
-    // ✅ Case 1: Reply to channel message (BEST)
-    if (m.quoted) {
-      targetKey = m.quoted.key;
-      emojis = q.split(",").map(e => e.trim()).filter(Boolean);
+    // split link & emojis
+    const parts = q.split(",");
+    if (parts.length < 2) {
+      return reply("❌ Link eka saha emoji eka denna");
     }
 
-    // ✅ Case 2: Using channel message link
-    else {
-      const parts = q.split(",");
-      if (parts.length < 2)
-        return reply("❌ Link + emojis denna\nExample:\n.creact <link>,💙,❤️");
+    const link = parts.shift().trim();
+    const emojis = parts.map(e => e.trim()).filter(Boolean);
 
-      const link = parts.shift().trim();
-      emojis = parts.map(e => e.trim()).filter(Boolean);
+    // extract channel id & message id
+    const match = link.match(
+      /whatsapp\.com\/channel\/([A-Za-z0-9]+)\/([0-9]+)/
+    );
 
-      // Try to extract message id from link
-      const match = link.match(/\/([^\/]+)$/);
-      if (!match) return reply("❌ Invalid channel message link");
+    if (!match) return reply("❌ Invalid channel link");
 
-      const messageId = match[1];
+    const channelId = match[1];
+    const messageId = match[2];
 
-      // ⚠️ Best-effort key (Baileys limitation)
-      targetKey = {
-        remoteJid: from,
-        id: messageId,
-        fromMe: false
-      };
-    }
+    const channelJid = `${channelId}@newsletter`;
 
-    if (!emojis.length) return reply("❌ Emoji list eka hari naha");
+    const key = {
+      remoteJid: channelJid,
+      id: messageId,
+      fromMe: false
+    };
 
-    // 🔥 Send reactions one by one
+    // send reactions
     for (const emoji of emojis) {
-      await conn.sendMessage(from, {
+      await conn.sendMessage(channelJid, {
         react: {
           text: emoji,
-          key: targetKey
+          key
         }
       });
 
-      await new Promise(r => setTimeout(r, 500)); // anti-spam delay
+      await new Promise(r => setTimeout(r, 600));
     }
 
-    reply(`✅ Reacted with: ${emojis.join(" ")}`);
+    reply(`✅ React sent: ${emojis.join(" ")}`);
 
   } catch (err) {
     console.error(err);
