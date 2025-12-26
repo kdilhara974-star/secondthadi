@@ -3,7 +3,7 @@ const { cmd } = require("../command");
 cmd({
   pattern: "rch",
   react: "🤖",
-  desc: "Owner Only: Multi emoji reply to a channel post",
+  desc: "Owner Only: Multi emoji reply to a post",
   category: "owner",
   use: ".rch <post_link> <emoji1>|<emoji2>|<emoji3>",
   filename: __filename
@@ -33,9 +33,6 @@ async (conn, mek, m, { from, isOwner }) => {
     // ---------------- POST LINK ----------------
     const postLink = args[0];
 
-    // ---------------- CHANNEL CHECK ----------------
-    if (!from.endsWith("@newsletter")) return reply("⚠️ This command only works on channel messages!");
-
     // ---------------- EMOJIS ----------------
     const emojis = args.slice(1).join(" ").split("|").map(e => e.trim()).filter(Boolean);
     if (!emojis.length) return reply("❌ Emojis not found!");
@@ -50,7 +47,7 @@ async (conn, mek, m, { from, isOwner }) => {
       try {
         await conn.sendMessage(from, { text: emoji }, { quoted: m });
         success++;
-        await new Promise(r => setTimeout(r, 500)); // small delay
+        await new Promise(r => setTimeout(r, 500));
       } catch (err) {
         console.error(err);
         failed++;
