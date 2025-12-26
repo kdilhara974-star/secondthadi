@@ -2,13 +2,13 @@ const { cmd } = require("../command");
 const config = require("../config");
 
 // ---------------- CONFIG ----------------
-const DEFAULT_CHANNEL_POST = config.defaultChannelPost || ""; // default post link
-const DEFAULT_CHANNEL_JID = config.defaultChannelJid || "";   // channel JID
+const DEFAULT_CHANNEL_POST = config.defaultChannelPost || "";
+const DEFAULT_CHANNEL_JID = config.defaultChannelJid || "";
 
 cmd({
   pattern: "rch",
   react: "🤖",
-  desc: "Owner Only: Multi react (as emoji replies) to latest channel post",
+  desc: "Owner Only: Multi emoji reply to latest channel post or specific post",
   category: "owner",
   use: ".rch <post_link> <emoji1>|<emoji2> OR .rch latest <emoji1>|<emoji2>",
   filename: __filename
@@ -28,7 +28,6 @@ async (conn, mek, m, { from, isOwner }) => {
       "";
 
     let args = text.trim().split(/\s+/).slice(1);
-
     if (args.length < 2) {
       return reply(
 `❌ Usage:
@@ -45,11 +44,11 @@ OR
       postLink = DEFAULT_CHANNEL_POST;
     }
 
-    // Extract JID from config (must set manually)
+    // ---------------- JID ----------------
     const postJid = DEFAULT_CHANNEL_JID;
     if (!postJid) return reply("⚠️ Channel JID not set in config!");
 
-    // ---------------- EMOJI LIST ----------------
+    // ---------------- EMOJIS ----------------
     const emojis = args.slice(1).join(" ").split("|").map(e => e.trim()).filter(Boolean);
     if (!emojis.length) return reply("❌ Emojis not found!");
 
