@@ -3,7 +3,7 @@ const yts = require('yt-search');
 const axios = require('axios');
 
 cmd({
-    pattern: "video1",
+    pattern: "video",
     react: "🎬",
     desc: "Download YouTube MP4",
     category: "download",
@@ -11,7 +11,7 @@ cmd({
     filename: __filename
 }, async (conn, mek, m, { from, reply, q }) => {
     try {
-        if (!q) return reply("❓ *Please provide a video name or link!*");
+        if (!q) return reply("⚠️ Please provide a video name or YouTube link (or reply to a message)");
 
         const search = await yts(q);
         if (!search.videos.length) return reply("❌ No results found.");
@@ -27,21 +27,29 @@ cmd({
         };
 
         const caption = `
-🎥 *Video Downloader*
+*📽️ RANUMITHA-X-MD VIDEO DOWNLOADER 🎥*
 
-📑 *Title:* ${data.title}
-⏱️ *Duration:* ${data.timestamp}
-📆 *Uploaded:* ${data.ago}
-📊 *Views:* ${data.views}
+*🎵 \`Title:\`* ${data.title}
+*⏱️ \`Duration:\`* ${data.timestamp}
+*📆 \`Uploaded:\`* ${data.ago}
+*📊 \`Views:\`* ${data.views}
+*🔗 \`Link:\`* ${data.url}
 
-🔢 *Reply Number*
+🔢 *Reply Below Number*
 
-🎥 Video
-1.1 240p | 1.2 360p | 1.3 480p | 1.4 720p
+1. *Video FILE 📽️*
+   1.1 240p Qulity 📽️
+   1.2 360p Qulity 📽️
+   1.3 480p Qulity 📽️
+   1.4 720p Qulity 📽️
 
-📁 Document
-2.1 240p | 2.2 360p | 2.3 480p | 2.4 720p
-`;
+2. *Document FILE 📂*
+   2.1 240p Qulity 📂
+   2.2 360p Qulity 📂
+   2.3 480p Qulity 📂
+   2.4 720p Qulity 📂
+
+> © Powered by 𝗥𝗔𝗡𝗨𝗠𝗜𝗧𝗛𝗔-𝗫-𝗠𝗗 🌛`;
 
         const sentMsg = await conn.sendMessage(from, {
             image: { url: data.thumbnail },
@@ -77,7 +85,7 @@ cmd({
                 case "2.4": quality = "720p"; isDoc = true; break;
 
                 default:
-                    return reply("❌ Invalid option");
+                    return reply("*❌ Invalid option*");
             }
 
             // ⬇️ Download start
@@ -108,6 +116,6 @@ cmd({
 
     } catch (e) {
         console.log(e);
-        reply("❌ Error occurred");
+        reply("*Error*");
     }
 });
