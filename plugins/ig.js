@@ -1,7 +1,6 @@
 const axios = require("axios");
 const { cmd } = require('../command');
 
-
 cmd({
   pattern: "ig",
   alias: ["insta","instagram"],
@@ -14,6 +13,7 @@ cmd({
       return conn.sendMessage(from, { text: "*❌ Please provide a valid Instagram URL*" }, { quoted: m });
     }
 
+    // Initial react
     await conn.sendMessage(from, { react: { text: '📽️', key: m.key } });
 
     const apiUrl = `https://api-aswin-sparky.koyeb.app/api/downloader/igdl?url=${encodeURIComponent(q)}`;
@@ -21,22 +21,22 @@ cmd({
     const data = response.data;
 
     if (!data || !data.status || !data.data || data.data.length === 0) {
-      return reply("⚠️ Failed to retrieve Instagram media. Please check the link and try again.");
+      return reply("⚠️ Failed to retrieve Instagram media.");
     }
 
     const media = data.data[0];
+
     const caption = `
-📺 Instagram Downloader. 📥
+📺 Instagram Downloader 📥
 
 🗂️ *Type:* ${media.type.toUpperCase()}
 🔗 *Link:* ${q}
 
 🔢 *Reply Below Number*
+1️⃣ HD Quality
+2️⃣ Audio (MP3)
 
-1️⃣  *HD Quality*🔋
-2️⃣  *Audio (MP3)*🎶
-
-> © Powerd by 𝗥𝗔𝗡𝗨𝗠𝗜𝗧𝗛𝗔-𝗫-𝗠𝗗 🌛`;
+> © Powered by 𝗥𝗔𝗡𝗨𝗠𝗜𝗧𝗛𝗔-𝗫-𝗠𝗗 🌛`;
 
     const sentMsg = await conn.sendMessage(from, {
       image: { url: media.thumbnail },
@@ -45,48 +45,77 @@ cmd({
 
     const messageID = sentMsg.key.id;
 
-    // 🧠 Listen for user reply
     conn.ev.on("messages.upsert", async (msgData) => {
       const receivedMsg = msgData.messages[0];
       if (!receivedMsg?.message) return;
 
-      const receivedText = receivedMsg.message.conversation || receivedMsg.message.extendedTextMessage?.text;
+      const text =
+        receivedMsg.message.conversation ||
+        receivedMsg.message.extendedTextMessage?.text;
+
       const senderID = receivedMsg.key.remoteJid;
-      const isReplyToBot = receivedMsg.message.extendedTextMessage?.contextInfo?.stanzaId === messageID;
+      const isReply =
+        receivedMsg.message.extendedTextMessage?.contextInfo?.stanzaId === messageID;
 
-      if (isReplyToBot) {
-        await conn.sendMessage(senderID, { react: { text: '⏳', key: receivedMsg.key } });
+      if (!isReply) return;
 
-        switch (receivedText.trim()) {
-          case "1":
-            if (media.type === "video") {
-              await conn.sendMessage(senderID, {
-                video: { url: media.url },
-                caption: "📥 *Video Downloaded Successfully!*"
-              }, { quoted: receivedMsg });
-            } else {
-              reply("⚠️ No video found for this post.");
-            }
-            break;
+      switch (text.trim()) {
+        case "1":
+          if (media.type !== "video") {
+            return reply("⚠️ No video found.");
+          }
 
-          case "2":
-              await conn.sendMessage(senderID, {
-                audio: { url: media.url },
-                mimetype: "audio/mp4",
-                ptt: false
-              }, { quoted: receivedMsg });
-            break;
+          // ⬇️ Downloading
+          await conn.sendMessage(senderID, {
+            react: { text: '⬇️', key: receivedMsg.key }
+          });
 
-          default:
-            reply("*❌ Invalid option!*");
-        }
+          // ⬆️ Uploading
+          await conn.sendMessage(senderID, {
+            react: { text: '⬆️', key: receivedMsg.key }
+          });
+
+          await conn.sendMessage(senderID, {
+            video: { url: media.url },
+            caption: "📥 Video Downloaded Successfully!"
+          }, { quoted: receivedMsg });
+
+          // ✔️ Sent
+          await conn.sendMessage(senderID, {
+            react: { text: '✔️', key: receivedMsg.key }
+          });
+          break;
+
+        case "2":
+          // ⬇️ Downloading
+          await conn.sendMessage(senderID, {
+            react: { text: '⬇️', key: receivedMsg.key }
+          });
+
+          // ⬆️ Uploading
+          await conn.sendMessage(senderID, {
+            react: { text: '⬆️', key: receivedMsg.key }
+          });
+
+          await conn.sendMessage(senderID, {
+            audio: { url: media.url },
+            mimetype: "audio/mp4",
+            ptt: false
+          }, { quoted: receivedMsg });
+
+          // ✔️ Sent
+          await conn.sendMessage(senderID, {
+            react: { text: '✔️', key: receivedMsg.key }
+          });
+          break;
+
+        default:
+          reply("*❌ Invalid option!*");
       }
     });
 
-  } catch (error) {
-    console.error("Instagram Plugin Error:", error);
-    reply("*Error*");
+  } catch (err) {
+    console.error("Instagram Plugin Error:", err);
+    reply("*❌ Error occurred*");
   }
 });
-
-
