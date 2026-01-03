@@ -11,12 +11,13 @@ cmd({
     filename: __filename
 },
 async (conn, mek, m, {
-    from, quoted, body, isCmd, command, args, q, isGroup, senderNumber, reply
+    from, quoted, body, isCmd, command, args, q, isGroup, isOwner, senderNumber, reply
 }) => {
     try {
 
         if (!isGroup) {
             return reply("This command can only be used in groups.");
+        if (!isOwner) return reply("📛 *Owner only command!*");
         }
         
 
