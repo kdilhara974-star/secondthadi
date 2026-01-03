@@ -31,7 +31,9 @@ cmd({
     filename: __filename
 }, async (conn, mek, m, { from, reply, q }) => {
     try {
-        if (!q || !q.startsWith("http")) return reply("❌ Please provide a valid Instagram link");
+        if (!q || !q.startsWith("http")) {
+            return reply("❌ Please provide a valid Instagram link");
+        }
 
         // ⏳ Processing react
         await conn.sendMessage(from, { react: { text: "⏳", key: m.key } });
@@ -39,7 +41,9 @@ cmd({
         const apiUrl = `https://api-aswin-sparky.koyeb.app/api/downloader/igdl?url=${encodeURIComponent(q)}`;
         const { data } = await axios.get(apiUrl);
 
-        if (!data?.status || !data.data?.length) return reply("❌ Failed to fetch Instagram media");
+        if (!data?.status || !data.data?.length) {
+            return reply("❌ Failed to fetch Instagram media");
+        }
 
         const media = data.data[0];
 
@@ -83,12 +87,12 @@ cmd({
             // ⬇️ Download react
             await conn.sendMessage(from, { react: { text: "⬇️", key: msg.key } });
 
-            // ⬆️ Upload react
-            await conn.sendMessage(from, { react: { text: "⬆️", key: msg.key } });
-
             switch (text.trim()) {
                 case "1":
-                    if (media.type !== "video") return reply("❌ This post has no video");
+                    if (media.type !== "video") {
+                        return reply("❌ This post has no video");
+                    }
+
                     await conn.sendMessage(from, {
                         video: { url: media.url },
                         mimetype: "video/mp4"
