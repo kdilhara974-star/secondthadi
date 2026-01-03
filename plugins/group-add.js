@@ -12,8 +12,6 @@ async (conn, mek, m, { from, isGroup, isOwner, isAdmins, isBotAdmins, reply, q }
 
         if (!isGroup) return reply("📛 *Group command only!*");
         if (!isOwner) return reply("📛 *Owner only command!*");
-        if (!isAdmins) return reply("📛 *Only admins can add members!*");
-        if (!isBotAdmins) return reply("📛 *Bot must be admin to add members!*");
 
         if (!q) return reply("🔢 *Please enter a number!*\nExample: `.add 94761234567`");
 
