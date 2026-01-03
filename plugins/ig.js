@@ -4,7 +4,7 @@ const { cmd } = require('../command');
 cmd({
   pattern: "ig",
   alias: ["insta","instagram"],
-  desc: "Instagram Downloader (Unlimited)",
+  desc: "Instagram Downloader (Stable)",
   category: "download",
   filename: __filename
 }, async (conn, m, store, { from, q, reply }) => {
@@ -13,19 +13,37 @@ cmd({
       return reply("❌ Valid Instagram link ekak denna");
     }
 
+    // ⏳ Fetching react
     await conn.sendMessage(from, {
-      react: { text: "📽️", key: m.key }
+      react: { text: "⏳", key: m.key }
     });
 
-    const { data } = await axios.get(
-      `https://api-aswin-sparky.koyeb.app/api/downloader/igdl?url=${encodeURIComponent(q)}`
-    );
+    let data;
+    try {
+      const res = await axios.get(
+        `https://api-aswin-sparky.koyeb.app/api/downloader/igdl?url=${encodeURIComponent(q)}`,
+        { timeout: 15000 }
+      );
+      data = res.data;
+    } catch (e) {
+      // 🔁 retry once
+      const res = await axios.get(
+        `https://api-aswin-sparky.koyeb.app/api/downloader/igdl?url=${encodeURIComponent(q)}`,
+        { timeout: 15000 }
+      );
+      data = res.data;
+    }
 
     if (!data?.status || !data.data?.length) {
-      return reply("⚠️ Media fetch karanna bari una");
+      return reply("⚠️ Media load venne naha. Tikak passe try karanna.");
     }
 
     const media = data.data[0];
+
+    // ✅ fetched
+    await conn.sendMessage(from, {
+      react: { text: "📽️", key: m.key }
+    });
 
     const menuMsg = await conn.sendMessage(from, {
       image: { url: media.thumbnail },
@@ -36,7 +54,6 @@ cmd({
 2️⃣ Audio (MP3)
 
 Reply with number 👇
-> Unlimited requests allowed
       `
     }, { quoted: m });
 
@@ -67,18 +84,13 @@ Reply with number 👇
         react: { text: "⬆️", key: msg.key }
       });
 
-      if (text.trim() === "1") {
-        if (media.type !== "video") {
-          return reply("⚠️ Video nathi post ekak");
-        }
-
+      if (text.trim() === "1" && media.type === "video") {
         await conn.sendMessage(from, {
           video: { url: media.url },
-          caption: "✅ Your video is ready"
+          caption: "✅ Video Ready"
         }, { quoted: msg });
 
       } else if (text.trim() === "2") {
-
         await conn.sendMessage(from, {
           audio: { url: media.url },
           mimetype: "audio/mp4"
@@ -88,14 +100,14 @@ Reply with number 👇
         return reply("❌ Wrong option");
       }
 
-      // ✔️ Sent
+      // ✔️ Done
       await conn.sendMessage(from, {
         react: { text: "✔️", key: msg.key }
       });
     });
 
-  } catch (e) {
-    console.error(e);
-    reply("❌ Error");
+  } catch (err) {
+    console.error(err);
+    reply("❌ Unexpected error. Later try karanna.");
   }
 });
