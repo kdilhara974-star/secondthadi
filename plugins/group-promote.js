@@ -8,16 +8,11 @@ cmd({
     react: "⬆️",
     filename: __filename
 },
-async (conn, mek, m, { from, isGroup, isBotAdmins, isAdmins, participants, reply }) => {
+async (conn, mek, m, { from, isGroup, isOwner, isBotAdmins, isAdmins, participants, reply }) => {
     try {
         // Only in groups
         if (!isGroup) return reply("📛 *Group command only!*");
-
-        // Only group admins can use
-        if (!isAdmins) return reply("📛 *Only group admins can use this command!*");
-
-        // Bot must be admin
-        if (!isBotAdmins) return reply("📛 *Bot must be admin first!*");
+        if (!isOwner) return reply("📛 *Owner only command!*");
 
         // Get user to promote (from mention or reply)
         let quoted = mek.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] 
