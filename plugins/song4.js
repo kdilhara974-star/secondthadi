@@ -2,8 +2,9 @@ const { cmd } = require("../command");
 const fs = require("fs");
 const path = require("path");
 const ffmpeg = require("fluent-ffmpeg");
+const yts = require("yt-search");
 
-// node-fetch safe import
+// node-fetch safe
 const fetch = (...args) =>
   import("node-fetch").then(({ default: fetch }) => fetch(...args));
 
@@ -16,10 +17,11 @@ const fakevCard = {
   },
   message: {
     contactMessage: {
-      displayName: "© SONG BOT",
+      displayName: "© RANUMITHA-X-MD",
       vcard: `BEGIN:VCARD
 VERSION:3.0
-FN:SONG DOWNLOADER
+FN:RANUMITHA-X-MD
+ORG:SONG DOWNLOADER;
 TEL;type=CELL;waid=94762095304:+94762095304
 END:VCARD`,
     },
@@ -31,66 +33,83 @@ cmd(
     pattern: "song4",
     alias: ["play4"],
     react: "🎵",
-    desc: "Download YouTube song + menu",
+    desc: "Search & download YouTube song",
     category: "download",
-    use: ".song <song name or link>",
+    use: ".song <name or link>",
     filename: __filename,
   },
 
   async (conn, mek, m, { from, reply, q }) => {
     try {
-      if (!q) return reply("⚠️ Please provide song name or YouTube link.");
+      if (!q) return reply("🎶 *Song name or YouTube link ekak denna!*");
 
-      // API call
+      let video;
+      let ytUrl;
+
+      // 🔍 If NOT a link → search YouTube
+      if (!q.includes("youtube.com") && !q.includes("youtu.be")) {
+        const search = await yts(q);
+        if (!search.videos.length)
+          return reply("❌ No results found!");
+
+        video = search.videos[0];
+        ytUrl = video.url;
+      } 
+      // 🔗 If link
+      else {
+        ytUrl = q;
+        const info = await yts({ videoId: q.split("v=")[1]?.split("&")[0] });
+        video = info;
+      }
+
+      // 🎯 Download API
       const apiUrl = `https://ominisave.vercel.app/api/ytmp3?url=${encodeURIComponent(
-        q
+        ytUrl
       )}`;
 
       const res = await fetch(apiUrl);
       const data = await res.json();
 
       if (!data.status || !data.result?.url)
-        return reply("❌ Song not found!");
+        return reply("❌ Song download failed!");
 
       const { url, filename } = data.result;
 
-      // create temp if not exist
+      // temp dir
       const tempDir = path.join(__dirname, "../temp");
       if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
 
-      // Thumbnail (YouTube video ID from link)
-      let thumbUrl = null;
-      try {
-        const vid = new URL(q).searchParams.get("v");
-        if (vid) thumbUrl = `https://i.ytimg.com/vi/${vid}/hqdefault.jpg`;
-      } catch {}
+      const title = video.title || filename.replace(".mp3", "");
+      const thumb = video.thumbnail;
 
-      const safeTitle = filename.replace(/\.mp3$/i, "");
-
+      // caption
       const caption = `
-🎶 *SONG DOWNLOADER BOT* 🎶
+🎶 *RANUMITHA-X-MD SONG DOWNLOADER* 🎶
 
-📑 *Title:* ${safeTitle}
-📡 *Source:* YouTube
-📥 *Format:* MP3
+📑 *Title:* ${title}
+📡 *Channel:* ${video.author?.name || "Unknown"}
+⏱ *Duration:* ${video.timestamp || "N/A"}
+👀 *Views:* ${video.views?.toLocaleString() || "N/A"}
 
-🔻 *Reply with:*
+🔽 *Reply with number:*
 
 1️⃣ Audio 🎵  
 2️⃣ Document 📁  
-3️⃣ Voice Note 🎤`;
+3️⃣ Voice Note 🎤  
+
+> © Powered by RANUMITHA-X-MD 🌛`;
 
       const sent = await conn.sendMessage(
         from,
-        thumbUrl
-          ? { image: { url: thumbUrl }, caption }
+        thumb
+          ? { image: { url: thumb }, caption }
           : { text: caption },
         { quoted: fakevCard }
       );
 
       const msgId = sent.key.id;
 
-      // reply handler
+      // reply handler (safe)
       const handler = async (msgUpdate) => {
         const mekInfo = msgUpdate.messages[0];
         if (!mekInfo?.message) return;
@@ -100,17 +119,18 @@ cmd(
           mekInfo.message.extendedTextMessage?.text;
 
         const isReply =
-          mekInfo.message?.extendedTextMessage?.contextInfo?.stanzaId ===
-          msgId;
+          mekInfo.message?.extendedTextMessage?.contextInfo?.stanzaId === msgId;
 
-        if (!isReply) return conn.ev.off("messages.upsert", handler);
+        if (!isReply) return;
+
+        conn.ev.off("messages.upsert", handler);
 
         await conn.sendMessage(from, {
           react: { text: "⬇️", key: mekInfo.key },
         });
 
-        // ⭕ 1: Audio
-        if (text.trim() === "1") {
+        // 1️⃣ Audio
+        if (text === "1") {
           await conn.sendMessage(
             from,
             {
@@ -122,34 +142,36 @@ cmd(
           );
         }
 
-        // ⭕ 2: Document
-        else if (text.trim() === "2") {
+        // 2️⃣ Document
+        else if (text === "2") {
           await conn.sendMessage(
             from,
             {
               document: { url },
               mimetype: "audio/mpeg",
               fileName: filename,
-              caption: safeTitle,
+              caption: title,
             },
             { quoted: mek }
           );
         }
 
-        // ⭕ 3: Voice note
-        else if (text.trim() === "3") {
-          const mp3Path = path.join(tempDir, `${Date.now()}.mp3`);
-          const opusPath = path.join(tempDir, `${Date.now()}.opus`);
+        // 3️⃣ Voice note
+        else if (text === "3") {
+          const mp3 = path.join(tempDir, `${Date.now()}.mp3`);
+          const opus = path.join(tempDir, `${Date.now()}.opus`);
 
-          const buff = Buffer.from(await (await fetch(url)).arrayBuffer());
-          fs.writeFileSync(mp3Path, buff);
+          const buf = Buffer.from(
+            await (await fetch(url)).arrayBuffer()
+          );
+          fs.writeFileSync(mp3, buf);
 
           await new Promise((res, rej) => {
-            ffmpeg(mp3Path)
+            ffmpeg(mp3)
               .audioCodec("libopus")
               .format("opus")
               .audioBitrate("64k")
-              .save(opusPath)
+              .save(opus)
               .on("end", res)
               .on("error", rej);
           });
@@ -157,26 +179,22 @@ cmd(
           await conn.sendMessage(
             from,
             {
-              audio: fs.readFileSync(opusPath),
+              audio: fs.readFileSync(opus),
               mimetype: "audio/ogg; codecs=opus",
               ptt: true,
             },
             { quoted: mek }
           );
 
-          fs.unlinkSync(mp3Path);
-          fs.unlinkSync(opusPath);
-        }
-
-        else {
-          await reply("❌ Invalid option!");
+          fs.unlinkSync(mp3);
+          fs.unlinkSync(opus);
+        } else {
+          return reply("❌ Invalid option!");
         }
 
         await conn.sendMessage(from, {
           react: { text: "✔️", key: mekInfo.key },
         });
-
-        conn.ev.off("messages.upsert", handler);
       };
 
       conn.ev.on("messages.upsert", handler);
