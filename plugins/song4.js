@@ -4,11 +4,11 @@ const path = require("path");
 const ffmpeg = require("fluent-ffmpeg");
 const yts = require("yt-search");
 
-// node-fetch safe
+// node-fetch (Node 18 safe)
 const fetch = (...args) =>
   import("node-fetch").then(({ default: fetch }) => fetch(...args));
 
-// fake quoted
+// fake quoted vcard
 const fakevCard = {
   key: {
     fromMe: false,
@@ -33,7 +33,7 @@ cmd(
     pattern: "song4",
     alias: ["play4"],
     react: "🎵",
-    desc: "Search & download YouTube song",
+    desc: "YouTube song downloader",
     category: "download",
     use: ".song <name or link>",
     filename: __filename,
@@ -41,28 +41,36 @@ cmd(
 
   async (conn, mek, m, { from, reply, q }) => {
     try {
-      if (!q) return reply("🎶 *Song name or YouTube link ekak denna!*");
+      if (!q) return reply("🎶 Song name or YouTube link ekak denna!");
+
+      // 🔐 ORIGINAL COMMAND SENDER
+      const ownerJid = mek.key.participant || mek.key.remoteJid;
 
       let video;
       let ytUrl;
 
-      // 🔍 If NOT a link → search YouTube
+      // 🔍 If song name → yt-search
       if (!q.includes("youtube.com") && !q.includes("youtu.be")) {
         const search = await yts(q);
         if (!search.videos.length)
-          return reply("❌ No results found!");
+          return reply("❌ Song not found!");
 
         video = search.videos[0];
         ytUrl = video.url;
       } 
-      // 🔗 If link
+      // 🔗 If YouTube link
       else {
         ytUrl = q;
-        const info = await yts({ videoId: q.split("v=")[1]?.split("&")[0] });
+        const id =
+          q.includes("v=")
+            ? q.split("v=")[1].split("&")[0]
+            : q.split("/").pop();
+
+        const info = await yts({ videoId: id });
         video = info;
       }
 
-      // 🎯 Download API
+      // 🎧 ominisave API
       const apiUrl = `https://ominisave.vercel.app/api/ytmp3?url=${encodeURIComponent(
         ytUrl
       )}`;
@@ -75,21 +83,21 @@ cmd(
 
       const { url, filename } = data.result;
 
-      // temp dir
+      // temp folder
       const tempDir = path.join(__dirname, "../temp");
       if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
 
-      const title = video.title || filename.replace(".mp3", "");
-      const thumb = video.thumbnail;
+      const title =
+        video?.title || filename.replace(/\.mp3$/i, "");
 
-      // caption
+      const thumbnail = video?.thumbnail;
+
       const caption = `
 🎶 *RANUMITHA-X-MD SONG DOWNLOADER* 🎶
 
 📑 *Title:* ${title}
-📡 *Channel:* ${video.author?.name || "Unknown"}
-⏱ *Duration:* ${video.timestamp || "N/A"}
-👀 *Views:* ${video.views?.toLocaleString() || "N/A"}
+📡 *Channel:* ${video?.author?.name || "Unknown"}
+⏱ *Duration:* ${video?.timestamp || "N/A"}
 
 🔽 *Reply with number:*
 
@@ -101,28 +109,36 @@ cmd(
 
       const sent = await conn.sendMessage(
         from,
-        thumb
-          ? { image: { url: thumb }, caption }
+        thumbnail
+          ? { image: { url: thumbnail }, caption }
           : { text: caption },
         { quoted: fakevCard }
       );
 
       const msgId = sent.key.id;
 
-      // reply handler (safe)
+      // 🧠 REPLY HANDLER (SENDER LOCKED)
       const handler = async (msgUpdate) => {
         const mekInfo = msgUpdate.messages[0];
         if (!mekInfo?.message) return;
+
+        const senderJid =
+          mekInfo.key.participant || mekInfo.key.remoteJid;
+
+        // ❌ ignore if not original sender
+        if (senderJid !== ownerJid) return;
 
         const text =
           mekInfo.message.conversation ||
           mekInfo.message.extendedTextMessage?.text;
 
         const isReply =
-          mekInfo.message?.extendedTextMessage?.contextInfo?.stanzaId === msgId;
+          mekInfo.message?.extendedTextMessage?.contextInfo?.stanzaId ===
+          msgId;
 
         if (!isReply) return;
 
+        // remove listener after valid reply
         conn.ev.off("messages.upsert", handler);
 
         await conn.sendMessage(from, {
@@ -130,7 +146,7 @@ cmd(
         });
 
         // 1️⃣ Audio
-        if (text === "1") {
+        if (text.trim() === "1") {
           await conn.sendMessage(
             from,
             {
@@ -143,7 +159,7 @@ cmd(
         }
 
         // 2️⃣ Document
-        else if (text === "2") {
+        else if (text.trim() === "2") {
           await conn.sendMessage(
             from,
             {
@@ -157,7 +173,7 @@ cmd(
         }
 
         // 3️⃣ Voice note
-        else if (text === "3") {
+        else if (text.trim() === "3") {
           const mp3 = path.join(tempDir, `${Date.now()}.mp3`);
           const opus = path.join(tempDir, `${Date.now()}.opus`);
 
@@ -189,7 +205,7 @@ cmd(
           fs.unlinkSync(mp3);
           fs.unlinkSync(opus);
         } else {
-          return reply("❌ Invalid option!");
+          await reply("❌ Invalid option!");
         }
 
         await conn.sendMessage(from, {
