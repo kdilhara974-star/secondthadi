@@ -30,8 +30,8 @@ END:VCARD`,
 
 cmd(
   {
-    pattern: "song",
-    alias: ["play", "music"],
+    pattern: "song5",
+    alias: ["play5", "music5"],
     desc: "YouTube song downloader (Audio) via Ominisave API",
     category: "download",
     filename: __filename,
