@@ -10,12 +10,12 @@ const fakevCard = {
     },
     message: {
         contactMessage: {
-            displayName: "© Mr Hiruka",
+            displayName: "© Ranumitha",
             vcard: `BEGIN:VCARD
 VERSION:3.0
-FN:Meta
-ORG:META AI;
-TEL;type=CELL;type=VOICE;waid=94762095304:+94762095304
+FN:RANUMITHA
+ORG:RANUMITHA-X-MD;
+TEL;type=CELL;type=VOICE;waid=null:null
 END:VCARD`
         }
     }
@@ -32,18 +32,18 @@ cmd({
     try {
         // ✅ Get TikTok link from command or replied message
         let tiktokUrl = q?.trim();
-        if (!tiktokUrl && m?.quoted) {
+        if (!tiktokUrl && mek?.quoted) {
             tiktokUrl =
-                m.quoted.message?.conversation ||
-                m.quoted.message?.extendedTextMessage?.text ||
-                m.quoted.text;
+                mek.quoted.message?.conversation ||
+                mek.quoted.message?.extendedTextMessage?.text ||
+                mek.quoted.text;
         }
 
         if (!tiktokUrl || !tiktokUrl.includes("tiktok.com")) {
             return reply("⚠️ Please provide a valid TikTok link (or reply to a message).");
         }
 
-        await conn.sendMessage(from, { react: { text: '🎥', key: m.key } });
+        await conn.sendMessage(from, { react: { text: '🎥', key: mek.key } });
 
         // ✅ Fetch TikTok info
         const apiUrl = `https://delirius-apiofc.vercel.app/download/tiktok?url=${encodeURIComponent(tiktokUrl)}`;
@@ -53,16 +53,15 @@ cmd({
 
         const { title, author, like, comment, share, meta } = data.data;
 
-        const videoNoWatermark = meta.media.find(v => v.type === "video").org;
-        const videoWithWatermark = meta.media.find(v => v.type === "video").wm || videoNoWatermark;
+        const videoNoWatermark = meta.media.find(v => v.type === "video")?.org;
+        const videoWithWatermark = meta.media.find(v => v.type === "video")?.wm || videoNoWatermark;
         const audioUrl = meta.music?.playUrl || videoNoWatermark;
         const musicTitle = meta.music?.title || "Original Sound";
         const duration = meta.duration || "Unknown";
+        const thumbnail = meta.media.find(v => v.type === "video")?.cover || 
+                         "https://raw.githubusercontent.com/Ranumithaofc/RANU-FILE-S-/refs/heads/main/images/RANUMITHA-X-MD%20TIKTOK%20LOGO.jpg";
 
-        // ✅ Custom thumbnail (like FB plugin)
-        const customThumb = "https://raw.githubusercontent.com/Ranumithaofc/RANU-FILE-S-/refs/heads/main/images/RANUMITHA-X-MD%20TIKTOK%20LOGO.jpg";
-
-        // 1️⃣ Send menu with full details
+        // 1️⃣ Send menu with full details and video thumbnail
         const caption = `*🍇 RANUMITHA-X-MD TIKTOK DOWNLOADER 🍇*
 
 👤 \`User:\` ${author.nickname}
@@ -83,67 +82,90 @@ cmd({
 > © Powered by 𝗥𝗔𝗡𝗨𝗠𝗜𝗧𝗛𝗔-𝗫-𝗠𝗗 🌛`;
 
         const sentMsg = await conn.sendMessage(from, {
-            image: { url: customThumb },
+            image: { url: thumbnail },
             caption: caption
         }, { quoted: fakevCard });
 
-        const messageID = sentMsg.key.id;
+        const menuMessageID = sentMsg.key.id;
 
-        // 2️⃣ Listen for reply
-        conn.ev.on("messages.upsert", async (msgData) => {
+        // Create a one-time listener for this specific menu
+        const replyHandler = async (msgData) => {
             const receivedMsg = msgData.messages[0];
             if (!receivedMsg?.message) return;
 
-            const receivedText = receivedMsg.message.conversation || receivedMsg.message.extendedTextMessage?.text;
+            const receivedText = receivedMsg.message.conversation || 
+                                receivedMsg.message.extendedTextMessage?.text ||
+                                receivedMsg.message.extendedTextMessage?.text;
             const senderID = receivedMsg.key.remoteJid;
-            const isReplyToBot = receivedMsg.message.extendedTextMessage?.contextInfo?.stanzaId === messageID;
+            const isReplyToMenu = receivedMsg.message.extendedTextMessage?.contextInfo?.stanzaId === menuMessageID;
 
-            if (isReplyToBot) {
+            if (isReplyToMenu && senderID === from) {
+                // Remove listener after receiving reply
+                conn.ev.off("messages.upsert", replyHandler);
+
                 let mediaUrl, isAudio = false, captionText;
 
                 switch (receivedText.trim()) {
                     case "1":
                         mediaUrl = videoNoWatermark;
-                        captionText = "*TikTok Video (No Watermark)* 🫧";
+                        captionText = `*TikTok Video (No Watermark)* 🫧\n\n👤 *User:* ${author.nickname}\n📖 *Title:* ${title}\n⏱️ *Duration:* ${duration}`;
                         break;
                     case "2":
                         mediaUrl = videoWithWatermark;
-                        captionText = "*TikTok Video (With Watermark)* 🫧";
+                        captionText = `*TikTok Video (With Watermark)* 🫧\n\n👤 *User:* ${author.nickname}\n📖 *Title:* ${title}\n⏱️ *Duration:* ${duration}`;
                         break;
                     case "3":
                         mediaUrl = audioUrl;
                         isAudio = true;
-                        captionText = "*TikTok Audio* 🎶";
+                        captionText = `*TikTok Audio* 🎶\n\n👤 *User:* ${author.nickname}\n🎵 *Music:* ${musicTitle}\n⏱️ *Duration:* ${duration}`;
                         break;
                     default:
-                        return reply("*❌ Invalid option!*");
+                        return conn.sendMessage(from, { 
+                            text: "*❌ Invalid option! Please reply with 1, 2, or 3.*" 
+                        }, { quoted: receivedMsg });
                 }
 
                 // ⬇️ React when download starts
-                await conn.sendMessage(senderID, { react: { text: '⬇️', key: receivedMsg.key } });
+                await conn.sendMessage(from, { react: { text: '⬇️', key: receivedMsg.key } });
 
-                // ⬆️ React exactly at the moment upload starts
-                await conn.sendMessage(senderID, { react: { text: '⬆️', key: receivedMsg.key } });
+                try {
+                    if (isAudio) {
+                        await conn.sendMessage(from, {
+                            audio: { url: mediaUrl },
+                            mimetype: "audio/mp4",
+                            ptt: false,
+                            caption: captionText
+                        }, { quoted: receivedMsg });
+                    } else {
+                        // Video eke thumbnail ekak set karanna
+                        await conn.sendMessage(from, {
+                            video: { url: mediaUrl },
+                            mimetype: "video/mp4",
+                            caption: captionText,
+                            jpegThumbnail: thumbnail ? await (await axios.get(thumbnail, { responseType: 'arraybuffer' })).data : undefined
+                        }, { quoted: receivedMsg });
+                    }
 
-                if (isAudio) {
-                    await conn.sendMessage(senderID, {
-                        audio: { url: mediaUrl },
-                        mimetype: "audio/mp4",
-                        ptt: false,
-                        caption: captionText
-                    }, { quoted: receivedMsg });
-                } else {
-                    await conn.sendMessage(senderID, {
-                        video: { url: mediaUrl },
-                        mimetype: "video/mp4",
-                        caption: captionText
+                    // ✅ React after upload complete
+                    await conn.sendMessage(from, { react: { text: '✅', key: receivedMsg.key } });
+
+                } catch (error) {
+                    console.error("Error sending media:", error);
+                    await conn.sendMessage(from, { react: { text: '❌', key: receivedMsg.key } });
+                    conn.sendMessage(from, { 
+                        text: "*❌ Failed to send media. Please try again.*" 
                     }, { quoted: receivedMsg });
                 }
-
-                // ✅ React after upload complete
-                await conn.sendMessage(senderID, { react: { text: '✔️', key: receivedMsg.key } });
             }
-        });
+        };
+
+        // Set timeout to remove listener after 60 seconds
+        setTimeout(() => {
+            conn.ev.off("messages.upsert", replyHandler);
+        }, 60000);
+
+        // Add the listener
+        conn.ev.on("messages.upsert", replyHandler);
 
     } catch (e) {
         console.error("TikTok plugin error:", e);
