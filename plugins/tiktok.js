@@ -5,7 +5,7 @@ cmd(
   {
     pattern: "tiktok",
     alias: ["tt"],
-    react: "🎬",
+    react: "🎥",
     desc: "Download TikTok videos (Unlimited replies)",
     category: "download",
     filename: __filename,
@@ -13,39 +13,19 @@ cmd(
 
   async (conn, mek, m, { from, q, reply }) => {
     try {
+      if (!q || !q.startsWith("http")) {
+        return reply("⚠️ Please provide a valid TikTok link ");
+      }
 
-let url = q;
+      const { data } = await axios.get(
+        `https://api-aswin-sparky.koyeb.app/api/downloader/tiktok?url=${encodeURIComponent(
+          q
+        )}`
+      );
 
-// reply message check
-if (!url && m.quoted) {
-  if (m.quoted.text) {
-    url = m.quoted.text;
-  }
-}
-
-// still not found → deep message scan
-if (!url && m.message?.extendedTextMessage?.contextInfo?.quotedMessage) {
-  const qm = m.message.extendedTextMessage.contextInfo.quotedMessage;
-
-  url =
-    qm.conversation ||
-    qm.extendedTextMessage?.text ||
-    qm.imageMessage?.caption ||
-    qm.videoMessage?.caption ||
-    "";
-}
-
-// final validation
-if (!url || !url.match(/tiktok\.com|vt\.tiktok\.com/)) {
-  return reply(
-    "❌ TikTok link ekakata reply karala `.tiktok` kiyanna nathnam link eka denna."
-  );
-}
-
-// ⏳ react (IMPORTANT: m.key)
-await conn.sendMessage(from, {
-  react: { text: "⏳", key: m.key }
-});
+      if (!data?.status) {
+        return reply("⚠️ TikTok data ganna ba.");
+      }
 
       const dat = data.data;
 
@@ -57,7 +37,7 @@ await conn.sendMessage(from, {
 👍 \`Likes:\` ${dat.view || "0"} 
 💬 \`Comments:\` ${dat.comment || "0"}
 🔁 \`Shares:\` ${dat.share || "0"}
-🔗 \`Link:\` ${tiktokUrl}
+🔗 \`Link:\` ${q}
 
 💬 *Reply with your choice:*
 
@@ -151,7 +131,7 @@ cmd(
   {
     pattern: "tiktok2",
     alias: ["tt2"],
-    react: "🎬",
+    react: "🎥",
     desc: "Download TikTok videos (Unlimited reply)",
     category: "download",
     filename: __filename,
@@ -162,11 +142,6 @@ cmd(
       if (!q || !q.startsWith("http")) {
         return reply("❌ Please provide a valid TikTok URL.");
       }
-
-      // ⏳ react
-      await conn.sendMessage(from, {
-        react: { text: "⏳", key: mek.key },
-      });
 
       // API
       const { data } = await axios.get(
