@@ -5,7 +5,7 @@ cmd(
   {
     pattern: "tiktok",
     alias: ["tt"],
-    react: "🎬",
+    react: "🎥",
     desc: "Download TikTok videos (Unlimited replies)",
     category: "download",
     filename: __filename,
@@ -13,14 +13,21 @@ cmd(
 
   async (conn, mek, m, { from, q, reply }) => {
     try {
-      if (!q || !q.startsWith("http")) {
-        return reply("❌ Valid TikTok URL ekak denna.");
-      }
+              // ✅ Get TikTok link from command or replied message
+        let tiktokUrl = q?.trim();
+        if (!tiktokUrl && m?.quoted) {
+            tiktokUrl =
+                m.quoted.message?.conversation ||
+                m.quoted.message?.extendedTextMessage?.text ||
+                m.quoted.text;
+        }
 
-      // ⏳ react
-      await conn.sendMessage(from, {
-        react: { text: "⏳", key: mek.key },
-      });
+        if (!tiktokUrl || !tiktokUrl.includes("tiktok.com")) {
+            return reply("⚠️ Please provide a valid TikTok link (or reply to a message).");
+        }
+
+        await conn.sendMessage(from, { react: { text: '🎥', key: m.key } });
+
 
       const { data } = await axios.get(
         `https://api-aswin-sparky.koyeb.app/api/downloader/tiktok?url=${encodeURIComponent(
