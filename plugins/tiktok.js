@@ -13,31 +13,28 @@ cmd(
 
   async (conn, mek, m, { from, q, reply }) => {
     try {
-// URL get (text or reply)
 let url = q;
 
-if (!url && quoted) {
-  url = quoted.text || quoted.caption || "";
+// reply කරලා තියෙන message එකෙන් text ගන්න
+if (!url && m.quoted) {
+  const quotedMsg = m.quoted.message;
+
+  url =
+    quotedMsg?.conversation ||
+    quotedMsg?.extendedTextMessage?.text ||
+    quotedMsg?.imageMessage?.caption ||
+    quotedMsg?.videoMessage?.caption ||
+    "";
 }
 
-if (!url || !url.startsWith("http")) {
-  return reply("❌ Valid TikTok URL ekak denna.");
+if (!url || !url.includes("tiktok.com")) {
+  return reply("❌ TikTok link ekakata reply karala `.tiktok` kiyanna nathnam link eka denna.");
 }
 
 // ⏳ react
 await conn.sendMessage(from, {
-  react: { text: "⏳", key: mek.key },
+  react: { text: "⏳", key: m.key }
 });
-
-      const { data } = await axios.get(
-        `https://api-aswin-sparky.koyeb.app/api/downloader/tiktok?url=${encodeURIComponent(
-          q
-        )}`
-      );
-
-      if (!data?.status) {
-        return reply("⚠️ TikTok data ganna ba.");
-      }
 
       const dat = data.data;
 
