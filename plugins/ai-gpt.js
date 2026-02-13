@@ -53,16 +53,15 @@ async (conn, mek, m, { from, args, q, reply, react }) => {
 ━━━━━━━━━━━━━━━  
 ${data.result}`.trim();
 
-        await conn.sendMessage(
+            await conn.sendMessage(
       from,
       { text: responseMsg },
-      { quoted: FakeVCard }
-    );   
-        await react("✅");
-        
-    } catch (e) {
-        console.error("Error in AI command:", e);
-        await react("❌");
-        reply("An error occurred while communicating with the AI.");
-    }
+      { quoted: fakevCard }
+    );
+
+    await react("✅");
+
+  } catch (e) {
+    console.log("GPT-5 Error:", e.message);
+  }
 });
