@@ -106,7 +106,7 @@ conn.ev.on('messages.upsert', async (msgUpdate) => {
     if (/^(1|2|3|4|5|6|7|8|9|10|11|12)$/.test(userReply)) {
         // ✅ react
         await conn.sendMessage(fromUser, {
-            react: { text: '✅', key: mekInfo.key }
+            react: { text: '🎡', key: mekInfo.key }
         });
 
         // menu image url එක
@@ -494,6 +494,7 @@ conn.ev.on('messages.upsert', async (msgUpdate) => {
 ┃★│ • tagall
 ┃★│ • tagadmins
 ┃★│ • invite
+┃★╰──────────────
 ┃★╭──────────────
 ┃★│ 🔖 *Group Info*
 ┃★│ • gid [g link]
