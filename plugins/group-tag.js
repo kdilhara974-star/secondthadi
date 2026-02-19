@@ -20,7 +20,6 @@ async (conn, mek, m, {
     };
 
     if (!isGroup) return reply("❌ This command can only be used in groups.");
-    if (!isAdmins && !isCreator) return reply("❌ Only group admins can use this command.");
 
     const mentionAll = { mentions: participants.map(u => u.id) };
 
